@@ -100,7 +100,6 @@ jobs:
           python3 ./configure.py \
             -o build \
             --sdks css,csgo \
-            --targets ${{ matrix.target.arch }} \
             --enable-optimize
           cd build
           ambuild
@@ -112,7 +111,6 @@ jobs:
           python ./configure.py \
             -o build \
             --sdks css,csgo \
-            --targets ${{ matrix.target.arch }} \
             --enable-optimize
           cd build
           ambuild
