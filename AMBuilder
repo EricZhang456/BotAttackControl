@@ -21,12 +21,12 @@ else:
 project.sources += sourceFiles
 
 for sdk_target in Extension.sdk_targets:
-	sdk = sdk_target.sdk
-	cxx = sdk_target.cxx
-	if sdk['name'] in ['mock']:
-		continue
+    sdk = sdk_target.sdk
+    cxx = sdk_target.cxx
+    if sdk['name'] in ['mock']:
+        continue
 
-	binary = Extension.HL2ExtConfig(project, builder, cxx, projectName + '.ext.' + sdk['extension'], sdk)
-	Extension.add_cdetour(binary)
+    binary = Extension.HL2ExtConfig(project, builder, cxx, projectName + '.ext.' + sdk['extension'], sdk)
+    Extension.add_cdetour(binary)
 
 Extension.extensions += builder.Add(project)

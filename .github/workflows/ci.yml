@@ -1,0 +1,125 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: sm${{ matrix.sm.label }}-${{ matrix.target.os_name }}
+    runs-on: ${{ matrix.target.os }}
+    container: ${{ matrix.target.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        sm:
+          - label: "1.12"
+            branch: "1.12-dev"
+          - label: "1.13"
+            branch: "master"
+        target:
+          - os: ubuntu-latest
+            os_name: linux
+            container: ghcr.io/alliedmodders/build-containers/debian11-clang22:latest
+          - os: windows-latest
+            os_name: windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup Python (Windows)
+        if: matrix.target.os_name == 'windows'
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Install AMBuild
+        if: matrix.target.os_name == 'windows'
+        shell: bash
+        run: python -m pip install --upgrade git+https://github.com/alliedmodders/ambuild.git
+
+      - name: Fetch SourceMod
+        uses: actions/checkout@v7
+        with:
+          repository: alliedmodders/sourcemod
+          ref: ${{ matrix.sm.branch }}
+          path: sourcemod
+          submodules: recursive
+
+      - name: Fetch Metamod:Source
+        uses: actions/checkout@v7
+        with:
+          repository: alliedmodders/metamod-source
+          ref: 1.12-dev
+          path: mmsource
+          submodules: recursive
+
+      - name: Fetch CSS HL2SDK
+        uses: actions/checkout@v7
+        with:
+          repository: alliedmodders/hl2sdk
+          ref: css
+          path: hl2sdk-css
+          submodules: recursive
+
+      - name: Fetch CSGO HL2SDK
+        uses: actions/checkout@v7
+        with:
+          repository: alliedmodders/hl2sdk
+          ref: csgo
+          path: hl2sdk-csgo
+          submodules: recursive
+
+      - name: Set environment variables (Linux)
+        if: matrix.target.os_name == 'linux'
+        run: |
+          echo "SOURCEMOD=$GITHUB_WORKSPACE/sourcemod" >> $GITHUB_ENV
+          echo "MMSOURCE=$GITHUB_WORKSPACE/mmsource" >> $GITHUB_ENV
+          echo "HL2SDKCSS=$GITHUB_WORKSPACE/hl2sdk-css" >> $GITHUB_ENV
+          echo "HL2SDKCSGO=$GITHUB_WORKSPACE/hl2sdk-csgo" >> $GITHUB_ENV
+
+      - name: Set environment variables (Windows)
+        if: matrix.target.os_name == 'windows'
+        run: |
+          echo "SOURCEMOD=$env:GITHUB_WORKSPACE/sourcemod" >> $env:GITHUB_ENV
+          echo "MMSOURCE=$env:GITHUB_WORKSPACE/mmsource" >> $env:GITHUB_ENV
+          echo "HL2SDKCSS=$env:GITHUB_WORKSPACE/hl2sdk-css" >> $env:GITHUB_ENV
+          echo "HL2SDKCSGO=$env:GITHUB_WORKSPACE/hl2sdk-csgo" >> $env:GITHUB_ENV
+
+      - name: Build (Linux)
+        if: matrix.target.os_name == 'linux'
+        env:
+          CC: clang-22
+          CXX: clang++-22
+        run: |
+          python3 ./configure.py \
+            -o build \
+            --sdks css,csgo \
+            --targets ${{ matrix.target.arch }} \
+            --enable-optimize
+          cd build
+          ambuild
+
+      - name: Build (Windows)
+        if: matrix.target.os_name == 'windows'
+        shell: bash
+        run: |
+          python ./configure.py \
+            -o build \
+            --sdks css,csgo \
+            --targets ${{ matrix.target.arch }} \
+            --enable-optimize
+          cd build
+          ambuild
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkg-sm${{ matrix.sm.label }}-${{ matrix.target.os_name }}
+          path: build/package
+          if-no-files-found: error

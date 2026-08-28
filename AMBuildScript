@@ -396,9 +396,9 @@ class ExtensionConfig(object):
     raise Exception('No suitable SafetyHook build was found.')
 
 class SafetyHookShim:
-	def __init__(self, ext):
-		self.all_targets = ext.all_targets
-		self.libsafetyhook = []
+  def __init__(self, ext):
+    self.all_targets = ext.all_targets
+    self.libsafetyhook = []
 
 Extension = ExtensionConfig()
 Extension.detectSDKs()
@@ -411,7 +411,7 @@ builder.targets = builder.CloneableList(Extension.all_targets)
 SafetyHook = SafetyHookShim(Extension)
 safetyhook_build_script = os.path.join(Extension.sm_root, "public", "safetyhook", "AMBuilder")
 if not os.path.isfile(safetyhook_build_script):
-	raise Exception("Cannot file safetyhook build script")
+  raise Exception("Cannot file safetyhook build script")
 old_source_path = builder.cm.sourcePath
 builder.cm.sourcePath = os.path.dirname(safetyhook_build_script)
 builder.Build('AMBuilder', { 'SafetyHook': SafetyHook })
