@@ -1,0 +1,32 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os
+
+# Name of your extesion, this will also be it's file name.
+projectName = 'botattackcontrol'
+
+# smsdk_ext.cpp will be automatically added later
+sourceFiles = [
+  'extension.cpp',
+]
+
+project = builder.LibraryProject(projectName)
+
+if os.path.isfile(os.path.join(builder.currentSourcePath, 'sdk', 'smsdk_ext.cpp')):
+  # Use the copy included in the project
+  project.sources += [os.path.join('sdk', 'smsdk_ext.cpp')]
+else:
+  # Use the copy included with SM 1.6 and newer
+  project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
+
+project.sources += sourceFiles
+
+for sdk_target in Extension.sdk_targets:
+	sdk = sdk_target.sdk
+	cxx = sdk_target.cxx
+	if sdk['name'] in ['mock']:
+		continue
+
+	binary = Extension.HL2ExtConfig(project, builder, cxx, projectName + '.ext.' + sdk['extension'], sdk)
+	Extension.add_cdetour(binary)
+
+Extension.extensions += builder.Add(project)
